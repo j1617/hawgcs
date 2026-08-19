@@ -361,7 +361,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
       <li>在 Token 栏粘贴，保存</li>
     </ol>
     <p style="color:#888;font-size:12px">Token 仅用于突破 Gitee API 频率限制，不影响仓库公开属性。</p>
-    <button class="hg-btn-primary" type="button" onclick="hide403Help(); return false;">知道了</button>
+    <button class="hg-btn-primary" type="button" id="btn403Close">知道了</button>
   </div>
 </div>
 
@@ -604,8 +604,8 @@ async function doInstall(slug, type) {
     }
     // 根据类型显示不同的提示
     else if (type === 'lovelace' || type === 'theme') {
-      if (confirm('✅ 安装成功！\n\n需要刷新页面才能生效。\n\n是否立即刷新页面？')) {
-        window.parent.location.reload();
+      if (confirm('✅ 安装成功！\n\n需要刷新页面才能生效。\n\n点击确定返回首页并刷新。')) {
+        window.location.href = '/';
       }
     } else if (type === 'integration') {
       if (confirm('✅ 安装成功！\n\n集成插件需要重启 Home Assistant 才能生效。\n\n是否立即重启 Home Assistant？')) {
@@ -644,8 +644,8 @@ async function doUpdate(slug, type) {
     
     // 根据类型显示不同的提示
     if (type === 'lovelace' || type === 'theme') {
-      if (confirm('✅ 更新成功！\n\n需要刷新页面才能生效。\n\n是否立即刷新页面？')) {
-        window.parent.location.reload();
+      if (confirm('✅ 更新成功！\n\n需要刷新页面才能生效。\n\n点击确定返回首页并刷新。')) {
+        window.location.href = '/';
       }
     } else if (type === 'integration') {
       // 特殊处理：HAWGCS 自身
@@ -694,8 +694,8 @@ async function doUninstall(slug, type) {
         await restartHomeAssistant();
       }
     } else if (type === 'lovelace' || type === 'theme') {
-      if (confirm('✅ 卸载成功！\n\n是否刷新页面以更新界面？')) {
-        window.parent.location.reload();
+      if (confirm('✅ 卸载成功！\n\n点击确定返回首页并刷新。')) {
+        window.location.href = '/';
       }
     }
   } catch(err) {
@@ -792,14 +792,15 @@ function toast(msg, cls) {
 document.addEventListener('DOMContentLoaded', function() {
   var b403 = document.getElementById('btn403');
   if (b403) b403.addEventListener('click', show403Help);
+  var btnClose2 = document.getElementById('btn403Close');
+  if (btnClose2) btnClose2.addEventListener('click', hide403Help);
+  var modal2 = document.getElementById('hg-403-modal');
+  if (modal2) modal2.addEventListener('click', function(e) { if (e.target === modal2) hide403Help(); });
 });
 
 // 403 帮助弹窗
-function show403Help() { document.getElementById('hg-403-modal').style.display='flex'; }
-function hide403Help() {
-  var m = document.getElementById('hg-403-modal');
-  if (m) m.style.display = 'none';
-}
+function show403Help() { var m = document.getElementById('hg-403-modal'); if (m) m.style.display='flex'; }
+function hide403Help() { var m = document.getElementById('hg-403-modal'); if (m) m.style.display = 'none'; }
 
 })();
 </script>

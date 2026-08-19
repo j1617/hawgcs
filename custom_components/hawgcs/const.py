@@ -4,7 +4,7 @@ from __future__ import annotations
 DOMAIN = "hawgcs"
 
 # 版本号
-VERSION = "1.5.7"
+VERSION = "1.6.0"
 
 # Gitee 仓库默认配置
 DEFAULT_REPO = "hawgcs/hawgcs"

@@ -34,11 +34,12 @@ class LovelaceStore(StoreBase):
         filename = item["filename"]  # 要注册的 js 文件，如 "battery-card.js"
 
         _LOGGER.info("安装 lovelace [%s] file=%s", slug, filename)
-        
+
         # 确保 www/community 目录存在
         await self._ensure_www_community()
-        
-        downloaded = await self.download_tree(path, slug)
+
+        # 使用递归下载，支持子目录（如 battery-card/dist/battery-card.js）
+        downloaded = await self.download_tree_recursive(path, slug)
 
         # 验证文件是否真的下载了
         target = self.target_dir(slug)
