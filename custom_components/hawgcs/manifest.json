@@ -1,0 +1,13 @@
+{
+  "domain": "hawgcs",
+  "name": "HAWGCS Git插件商店",
+  "version": "1.5.7",
+  "author": "json77",
+  "documentation": "https://gitee.com/hawgcs/hawgcs",
+  "issue_tracker": "https://gitee.com/hawgcs/hawgcs/issues",
+  "codeowners": [],
+  "config_flow": true,
+  "requirements": ["voluptuous>=0.13.1"],
+  "dependencies": ["frontend"],
+  "iot_class": "local_polling"
+}

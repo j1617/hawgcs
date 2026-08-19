@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAWGCS - Git 插件商店</title>
+<style>
+:root {
+  --primary: #03a9f4;
+  --primary-dark: #0288d1;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --danger: #f44336;
+  --bg: #f5f5f5;
+  --surface: #fff;
+  --text: rgba(0,0,0,0.87);
+  --text2: rgba(0,0,0,0.54);
+  --divider: rgba(0,0,0,0.12);
+  --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.24);
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --surface: #1e1e1e;
+    --text: rgba(255,255,255,0.87);
+    --text2: rgba(255,255,255,0.54);
+    --divider: rgba(255,255,255,0.12);
+    --shadow: 0 1px 3px rgba(0,0,0,.5);
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+.hg-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--divider);
+  padding: 20px 24px 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: var(--shadow);
+}
+.hg-header h1 {
+  margin: 0 0 2px;
+  font-size: 22px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hg-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.hg-header-info { flex: 1; }
+.hg-header p { margin: 0 0 14px; color: var(--text2); font-size: 13px; }
+
+
+.hg-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-bottom: 4px;
+}
+.hg-search {
+  flex: 1;
+  min-width: 180px;
+  padding: 7px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+.hg-search:focus { outline: 2px solid var(--primary); border-color: transparent; }
+.hg-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--divider);
+  margin: 0 24px;
+  overflow-x: auto;
+}
+.hg-tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+.hg-tab:hover { color: var(--text); }
+.hg-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.hg-tab .badge {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 10px;
+  padding: 0 6px;
+  font-size: 11px;
+  min-width: 18px;
+  text-align: center;
+  font-weight: 400;
+}
+.hg-tab .badge.warn { background: var(--warning); }
+.hg-body { padding: 16px 24px 80px; }
+.hg-type-group { margin-bottom: 28px; }
+.hg-type-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--divider);
+}
+.hg-type-header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.hg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+.hg-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow .2s;
+  border: 1px solid var(--divider);
+}
+.hg-card:hover { box-shadow: 0 3px 8px rgba(0,0,0,.16); }
+.hg-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.hg-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.3;
+}
+.hg-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.hg-desc {
+  font-size: 13px;
+  color: var(--text2);
+  margin: 0;
+  line-height: 1.5;
+  flex: 1;
+}
+.hg-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text2);
+}
+.hg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  .hg-badge { background: rgba(255,255,255,.08); }
+}
+.hg-badge.integration { background: rgba(3,169,244,.15); color: #0288d1; }
+.hg-badge.lovelace    { background: rgba(156,39,176,.15); color: #9c27b0; }
+.hg-badge.theme       { background: rgba(255,152,0,.15);  color: #e65100; }
+
+.hg-badge.installed    { background: rgba(76,175,80,.2);  color: var(--success); }
+.hg-badge.update       { background: rgba(255,152,0,.2);  color: var(--warning); }
+button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+button:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover:not(:disabled) { background: #388e3c; }
+.btn-danger  { background: var(--danger); color: #fff; }
+.btn-danger:hover:not(:disabled)  { background: #d32f2f; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--divider); }
+.btn-outline:hover:not(:disabled) { background: rgba(0,0,0,.04); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.hg-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text2);
+  font-size: 14px;
+}
+.hg-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+.hg-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text2);
+}
+.hg-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30,30,30,.92);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity .25s, transform .25s;
+  pointer-events: none;
+  z-index: 9999;
+  font-size: 13px;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+.hg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.hg-toast.error { background: var(--danger); }
+.hg-toast.success { background: var(--success); }
+/* 403 Help Modal */
+.hg-modal {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+.hg-modal-content {
+  background: #fff; border-radius: 12px; padding: 28px;
+  max-width: 460px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  text-align: center;
+}
+.hg-modal-content h3 { margin: 0 0 12px; font-size: 18px; color: #333; }
+.hg-modal-content p { margin: 8px 0; color: #555; font-size: 14px; line-height: 1.6; }
+.hg-modal-content ol { text-align: left; padding-left: 20px; margin: 12px 0; }
+.hg-modal-content a { color: #4CAF50; }
+.hg-modal-content code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+.hg-btn-primary {
+  background: #4CAF50; color: #fff; border: none;
+  padding: 10px 32px; border-radius: 8px; cursor: pointer;
+  font-size: 14px; margin-top: 16px;
+}
+.hg-btn-primary:hover { background: #45a049; }
+.hg-footer-btn {
+  background: rgba(255,152,0,.15); color: #e65100;
+  border: 1px solid rgba(255,152,0,.3); border-radius: 6px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer;
+}
+.hg-footer-btn:hover { background: rgba(255,152,0,.25); }
+
+.hg-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--divider);
+  font-size: 12px;
+  color: var(--text2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 5;
+}
+.hg-footer .info { display: flex; gap: 16px; }
+.hg-footer span { display: flex; align-items: center; gap: 4px; }
+</style>
+</head>
+<body>
+
+<div class="hg-header">
+  <div class="hg-header-content">
+    <div class="hg-header-info">
+      <h1>📦 HAWGCS Git 插件商店 <span id="header-version" style="font-size:18px;font-weight:normal;opacity:0.7"></span></h1>
+      <p>HomeAssistant Git 插件商店 · 基于 Gitee · 支持 Integration / Lovelace / Theme</p>
+    </div>
+  </div>
+  <div class="hg-toolbar">
+    <input class="hg-search" id="searchInput" placeholder="🔍 搜索插件名/作者/域名" />
+    <button class="btn-outline btn-sm" id="refreshBtn" onclick="load()">🔄 刷新索引</button>
+    <button class="btn-outline btn-sm" id="statusBtn" onclick="showStatus()">📦 仓库状况</button>
+  </div>
+</div>
+
+<div class="hg-tabs" id="tabsContainer">
+  <button class="hg-tab active" data-tab="available" onclick="switchTab('available')">
+    可用 <span class="badge" id="cntAvailable">0</span>
+  </button>
+  <button class="hg-tab" data-tab="installed" onclick="switchTab('installed')">
+    已安装 <span class="badge" id="cntInstalled">0</span>
+  </button>
+  <button class="hg-tab" data-tab="updates" onclick="switchTab('updates')">
+    更新 <span class="badge warn" id="cntUpdates">0</span>
+  </button>
+</div>
+
+<div class="hg-body" id="body">
+  <div class="hg-loading" id="loading">⏳ 加载中…</div>
+  <div id="content" style="display:none"></div>
+</div>
+
+<!-- Toast -->
+<div class="hg-toast" id="toast"></div>
+
+<!-- 403 Help Modal -->
+<div id="hg-403-modal" class="hg-modal" style="display:none">
+  <div class="hg-modal-content">
+    <h3>403 错误说明</h3>
+    <p>403 是因为 Gitee 对匿名请求有频率限制，高频使用会触发。</p>
+    <p><strong>解决方法：申请 Gitee Personal Access Token</strong></p>
+    <ol style="text-align:left;line-height:2">
+      <li>打开 <a href="https://gitee.com/profile/personal_access_tokens" target="_blank">gitee.com/profile/personal_access_tokens</a></li>
+      <li>点击「创建令牌」，描述随意，如 <code>HAWGCS</code></li>
+      <li>权限只勾选 <strong>「projects」</strong>（项目相关）</li>
+      <li>创建后<strong>复制 Token</strong>（只显示一次）</li>
+      <li>HA → 设置 → 设备与服务 → HAWGCS → 配置</li>
+      <li>在 Token 栏粘贴，保存</li>
+    </ol>
+    <p style="color:#888;font-size:12px">Token 仅用于突破 Gitee API 频率限制，不影响仓库公开属性。</p>
+    <button class="hg-btn-primary" type="button" onclick="hide403Help(); return false;">知道了</button>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="hg-footer">
+  <div class="info">
+    <span>📦 <span id="footerTotal">0</span> 插件</span>
+    <span>✅<span id="footerInstalled">0</span> 已安装</span>
+    <span>🔄 <span id="footerUpdates">0</span> 可更新</span>
+  </div>
+  <span id="repoStatus">Stable · Gitee</span>
+  <a href="javascript:void(0)" class="hg-footer-btn" id="btn403">403 报错？</a>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let cache = [];
+let currentTab = 'available';
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', load);
+
+// ─── Load ─────────────────────────────────────────────────────────────────────
+async function load() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 加载中…';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('content').style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/hawgcs/list');
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    cache = data.repositories || [];
+    refreshUI();
+  } catch(err) {
+    toast('加载索引失败: ' + err, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 刷新索引';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+  }
+}
+
+// ─── Render ────────────────────────────────────────────────────────────────────
+function refreshUI() {
+  const kw = document.getElementById('searchInput').value.toLowerCase().trim();
+
+  const byType = (list) => {
+    const filtered = list.filter(it => {
+      const s = [it.name, it.author, it.slug, it.description, it.domain || '']
+        .filter(Boolean).join(' ').toLowerCase();
+      return !kw || s.includes(kw);
+    });
+    const groups = {};
+    for (const it of filtered) {
+      const t = it.type || 'integration';
+      if (!groups[t]) groups[t] = [];
+      groups[t].push(it);
+    }
+    return groups;
+  };
+
+  const availAll = cache.filter(it => !it.installed);
+  const instAll  = cache.filter(it => it.installed);
+  const updAll   = cache.filter(it => it.has_update);
+
+  let html = '';
+
+  if (currentTab === 'available') {
+    const groups = byType(availAll);
+    html = renderGroups(groups);
+  } else if (currentTab === 'installed') {
+    const groups = byType(instAll);
+    html = renderGroups(groups);
+  } else if (currentTab === 'updates') {
+    const groups = byType(updAll);
+    html = renderGroups(groups);
+  }
+
+  const content = document.getElementById('content');
+  content.innerHTML = html || '<div class="hg-empty"><div class="hg-empty-icon">📭</div>' + emptyMsg() + "</div>";
+
+  // Footer counts
+  document.getElementById('footerTotal').textContent = cache.length;
+  document.getElementById('footerInstalled').textContent = instAll.length;
+  document.getElementById('footerUpdates').textContent = updAll.length;
+  document.getElementById('cntAvailable').textContent = availAll.length;
+  document.getElementById('cntInstalled').textContent = instAll.length;
+  const updBadge = document.getElementById('cntUpdates');
+  updBadge.textContent = updAll.length;
+  updBadge.className = 'badge' + (updAll.length > 0 ? ' warn' : '');
+}
+
+function emptyMsg() {
+  const msgs = {
+    available: '无可用插件，请检查仓库或刷新索引',
+    installed: '还没有安装任何插件。',
+    updates: '所有插件已是最新版本。',
+  };
+  return msgs[currentTab] || '暂无内容';
+}
+
+function renderGroups(groups) {
+  const ORDER = ['integration','lovelace','theme'];
+  const LABELS = {
+    integration: '🔌 Integration（后端集成）',
+    lovelace: '📊 Lovelace 卡片',
+    theme: '🎨 Theme（主题）',
+  };
+  let html = '';
+  for (const t of ORDER) {
+    const items = groups[t];
+    if (!items || items.length === 0) continue;
+    html += '<div class="hg-type-group">' +
+      '<div class="hg-type-header"><h2>' + (LABELS[t] || t) + '</h2></div>' +
+      '<div class="hg-grid">' + items.map(renderCard).join('') + '</div>' +
+    '</div>';
+  }
+  return html;
+}
+
+function renderCard(it) {
+  const t = it.type || 'integration';
+  const installed = it.installed;
+  const hasUpdate = it.has_update;
+  const isSelf = (it.slug === 'hawgcs' && t === 'integration');
+
+  const TYPE_BADGE = {
+    integration: '🔌 Integration',
+    lovelace: '📊 卡片',
+    theme: '🎨 Theme',
+  };
+
+  let actionBtns = '';
+  
+  // 特殊处理：HAWGCS 自身
+  if (isSelf) {
+    if (hasUpdate) {
+      actionBtns = '<button class="btn-success btn-sm" onclick="doInstall(\'hawgcs\', \'integration\')">🔄 更新</button>';
+    } else {
+      actionBtns = '<span class="hg-badge installed">✅ 已安装 v' + (it.version || '?') + '</span>';
+    }
+  }
+  // 普通插件
+  else if (!installed) {
+    actionBtns = '<button class="btn-primary btn-sm" onclick="doInstall(\'' + it.slug + '\', \'' + t + '\')">安装</button>';
+  } else if (hasUpdate) {
+    actionBtns = '<button class="btn-success btn-sm" onclick="doUpdate(\'' + it.slug + '\', \'' + t + '\')">🔄 更新</button>'
+      + '<button class="btn-danger btn-sm" onclick="doUninstall(\'' + it.slug + '\', \'' + t + '\')">卸载</button>';
+  } else {
+    actionBtns = '<span class="hg-badge installed">✅ 已安装' + (it.local_version ? ' v' + it.local_version : '') + '</span>'
+      + '<button class="btn-outline btn-sm" onclick="doUninstall(\'' + it.slug + '\', \'' + t + '\')">卸载</button>';
+  }
+
+  const verTag = installed && hasUpdate
+    ? '<span class="hg-badge update">📦 v' + it.local_version + ' → v' + it.version + '</span>'
+    : (!installed ? '<span class="hg-badge">v' + (it.version || '?') + '</span>' : '');
+
+  const haMin = (it.homeassistant_min || it.ha_min_version)
+    ? '<span class="hg-badge">HA ≥ ' + (it.homeassistant_min || it.ha_min_version) + '</span>'
+    : '';
+
+  return ''
+    + '<div class="hg-card">'
+    +   '<div class="hg-card-head">'
+    +     '<h3 class="hg-card-title">' + escHtml(it.name || it.slug) + '</h3>'
+    +     '<span class="hg-badge ' + t + '">' + (TYPE_BADGE[t] || t) + '</span>'
+    +   '</div>'
+    +   '<p class="hg-desc">' + escHtml(it.description || '无描述') + '</p>'
+    +   '<div class="hg-meta">'
+    +     '<span class="hg-badge">👤 ' + escHtml(it.author || '未知') + '</span>'
+    +     haMin
+    +     verTag
+    +   '</div>'
+    +   '<div class="hg-card-actions">' + actionBtns + '</div>'
+    + '</div>';
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ─── Tab ──────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.hg-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  refreshUI();
+}
+
+// ─── Repository Switch ────────────────────────────────────────────────────────
+
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', refreshUI);
+
+// ─── Actions ───────────────────────────────────────────────────────────────────
+async function doInstall(slug, type) {
+  const typeNames = {
+    integration: '集成插件',
+    lovelace: 'Lovelace 卡片',
+    theme: '主题'
+  };
+  const typeName = typeNames[type] || type;
+  
+  // 特殊处理：HAWGCS 自身
+  const isSelf = (slug === 'hawgcs' && type === 'integration');
+  const confirmMsg = isSelf 
+    ? '确认更新「HAWGCS 插件商店」？\n\n将下载最新版本并覆盖当前安装。\n更新后需要重启 Home Assistant。'
+    : '确认安装「' + slug + '」(' + typeName + ')?';
+  
+  if (!confirm(confirmMsg)) return;
+  
+  const btn = createLoadingBtn();
+  try {
+    const resp = await fetch('/api/hawgcs/install', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({slug, type}),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.msg || '安装失败');
+    
+    toast(data.msg || (isSelf ? '更新成功' : '安装成功'), 'success');
+    await load();
+    
+    // 特殊处理：HAWGCS 自身更新
+    if (isSelf) {
+      if (confirm('✅ HAWGCS 已更新！\n\n需要重启 Home Assistant 才能生效。\n\n是否立即重启？')) {
+        await restartHomeAssistant();
+      }
+    }
+    // 根据类型显示不同的提示
+    else if (type === 'lovelace' || type === 'theme') {
+      if (confirm('✅ 安装成功！\n\n需要刷新页面才能生效。\n\n是否立即刷新页面？')) {
+        window.parent.location.reload();
+      }
+    } else if (type === 'integration') {
+      if (confirm('✅ 安装成功！\n\n集成插件需要重启 Home Assistant 才能生效。\n\n是否立即重启 Home Assistant？')) {
+        await restartHomeAssistant();
+      }
+    }
+  } catch(err) {
+    toast((isSelf ? '更新' : '安装') + '失败: ' + err.message, 'error');
+  } finally {
+    btn.remove();
+  }
+}
+
+async function doUpdate(slug, type) {
+  const typeNames = {
+    integration: '集成插件',
+    lovelace: 'Lovelace 卡片',
+    theme: '主题'
+  };
+  const typeName = typeNames[type] || type;
+  
+  if (!confirm('确认更新「' + slug + '」(' + typeName + ')?')) return;
+  
+  const btn = createLoadingBtn();
+  try {
+    const resp = await fetch('/api/hawgcs/update', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({slug, type}),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.msg || '更新失败');
+    
+    toast(data.msg || '更新成功', 'success');
+    await load();
+    
+    // 根据类型显示不同的提示
+    if (type === 'lovelace' || type === 'theme') {
+      if (confirm('✅ 更新成功！\n\n需要刷新页面才能生效。\n\n是否立即刷新页面？')) {
+        window.parent.location.reload();
+      }
+    } else if (type === 'integration') {
+      // 特殊处理：HAWGCS 自身
+      const isSelf = (slug === 'hawgcs');
+      const restartMsg = isSelf 
+        ? '✅ HAWGCS 已更新！\n\n需要重启 Home Assistant 才能生效。\n\n是否立即重启？'
+        : '✅ 更新成功！\n\n集成插件需要重启 Home Assistant 才能生效。\n\n是否立即重启 Home Assistant？';
+      
+      if (confirm(restartMsg)) {
+        await restartHomeAssistant();
+      }
+    }
+  } catch(err) {
+    toast('更新失败: ' + err.message, 'error');
+  } finally {
+    btn.remove();
+  }
+}
+
+async function doUninstall(slug, type) {
+  const typeNames = {
+    integration: '集成插件',
+    lovelace: 'Lovelace 卡片',
+    theme: '主题'
+  };
+  const typeName = typeNames[type] || type;
+  
+  if (!confirm('确认卸载「' + slug + '」(' + typeName + ')?')) return;
+  
+  const btn = createLoadingBtn();
+  try {
+    const resp = await fetch('/api/hawgcs/uninstall', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({slug, type}),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.msg || '卸载失败');
+    
+    toast(data.msg || '卸载成功', 'success');
+    await load();
+    
+    // 根据类型显示不同的提示
+    if (type === 'integration') {
+      if (confirm('✅ 卸载成功！\n\n集成插件卸载后需要重启 Home Assistant 才能完全生效。\n\n是否立即重启 Home Assistant？')) {
+        await restartHomeAssistant();
+      }
+    } else if (type === 'lovelace' || type === 'theme') {
+      if (confirm('✅ 卸载成功！\n\n是否刷新页面以更新界面？')) {
+        window.parent.location.reload();
+      }
+    }
+  } catch(err) {
+    toast('卸载失败: ' + err.message, 'error');
+  } finally {
+    btn.remove();
+  }
+}
+
+async function restartHomeAssistant() {
+  try {
+    const resp = await fetch('/api/hawgcs/restart', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.msg || '重启失败');
+    toast('正在重启 Home Assistant...', 'success');
+  } catch(err) {
+    toast('重启失败: ' + err.message + '\n请手动重启 Home Assistant', 'error');
+  }
+}
+
+function createLoadingBtn() {
+  const btn = document.createElement('button');
+  btn.className = 'btn-primary btn-sm';
+  btn.textContent = '处理中…';
+  btn.disabled = true;
+  document.body.appendChild(btn);
+  return btn;
+}
+
+// ─── Status ───────────────────────────────────────────────────────────────────
+async function showStatus() {
+  try {
+    const resp = await fetch('/api/hawgcs/status');
+    const s = await resp.json();
+    const lines = [
+      '📦 仓库：' + s.repo,
+      '🌿 分支：' + s.branch,
+      '🔗 索引：' + s.index_url,
+      '🗂 远程插件：' + s.total_remote + ' 个',
+      '',
+      '已安装：' + Object.values(s.installed_by_type || {}).flat().length + ' 个',
+    ];
+    for (const [type, list] of Object.entries(s.installed_by_type || {})) {
+      if (list.length > 0) {
+        lines.push('  [' + type + '] ' + list.map(x => x.slug).join(', '));
+      }
+    }
+    alert(lines.join('\n'));
+  } catch(err) {
+    toast('获取状态失败： ' + err, 'error');
+  }
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, cls) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'hg-toast show' + (cls ? ' ' + cls : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+}
+</script>
+
+<script>
+(function() {
+  var ver = null;
+  // 先试 API（HA 启动后可用）
+  fetch('/api/hawgcs/version')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.version) {
+        ver = data.version;
+        var el = document.getElementById('header-version');
+        if (el) el.textContent = 'v' + ver;
+      }
+    })
+    .catch(function() {});
+  // 超时 2s 直接读 manifest.json（独立于 HA API）
+  setTimeout(function() {
+    if (ver) return;
+    var scripts = document.querySelectorAll('script[src]');
+    for (var i = 0; i < scripts.length; i++) {
+      var m = scripts[i].src.match(/custom_components\/hawgcs\/manifest\.json/i);
+      if (m) {
+        ver = '?';
+        break;
+      }
+    }
+  }, 2000);
+document.addEventListener('DOMContentLoaded', function() {
+  var b403 = document.getElementById('btn403');
+  if (b403) b403.addEventListener('click', show403Help);
+});
+
+// 403 帮助弹窗
+function show403Help() { document.getElementById('hg-403-modal').style.display='flex'; }
+function hide403Help() {
+  var m = document.getElementById('hg-403-modal');
+  if (m) m.style.display = 'none';
+}
+
+})();
+</script>
+
+</body>
+</html>
