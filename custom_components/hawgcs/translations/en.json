@@ -1,0 +1,33 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HAWGCS Plugin Store",
+        "description": "The Gitee repository address uses the default value, no need to modify.\n\nIf you encounter 403 errors (request rate limit exceeded), please fill in a Gitee Personal Access Token to get a higher call quota. The Token is optional, you can also add it later in Settings.",
+        "data": {
+          "token": "Gitee Personal Access Token (optional)"
+        },
+        "data_description": {
+          "token": "When accessing the Gitee repository, if you encounter 403 errors (request rate limit exceeded), fill in your Gitee Personal Access Token here. Leave empty to use anonymous access (rate limited). The Token can also be added later in Settings."
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one instance of HAWGCS is allowed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HAWGCS Settings",
+        "description": "Gitee Personal Access Token (optional).\n\nWhen you encounter 403 errors (request rate limit exceeded) while accessing the repository, fill in the Token to continue. Leave empty to use anonymous access (rate limited).",
+        "data": {
+          "token": "Gitee Personal Access Token (optional)"
+        },
+        "data_description": {
+          "token": "When accessing the Gitee repository, if you encounter 403 errors (request rate limit exceeded), fill in your Gitee Personal Access Token here. Leave empty to use anonymous access (rate limited)."
+        }
+      }
+    }
+  }
+}

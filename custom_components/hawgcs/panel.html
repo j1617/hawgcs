@@ -500,23 +500,28 @@ function renderCard(it) {
 
   let actionBtns = '';
   
+  // 文档按钮（如果有 documentation 链接）
+  const docBtn = it.documentation
+    ? '<button class="btn-outline btn-sm" onclick="window.open(\'' + escHtml(it.documentation) + '\', \'_blank\')">📖 使用说明</button>'
+    : '';
+  
   // 特殊处理：HAWGCS 自身
   if (isSelf) {
     if (hasUpdate) {
-      actionBtns = '<button class="btn-success btn-sm" onclick="doInstall(\'hawgcs\', \'integration\')">🔄 更新</button>';
+      actionBtns = '<button class="btn-success btn-sm" onclick="doInstall(\'hawgcs\', \'integration\')">🔄 更新</button>' + docBtn;
     } else {
-      actionBtns = '<span class="hg-badge installed">✅ 已安装 v' + (it.version || '?') + '</span>';
+      actionBtns = '<span class="hg-badge installed">✅ 已安装 v' + (it.version || '?') + '</span>' + docBtn;
     }
   }
   // 普通插件
   else if (!installed) {
-    actionBtns = '<button class="btn-primary btn-sm" onclick="doInstall(\'' + it.slug + '\', \'' + t + '\')">安装</button>';
+    actionBtns = '<button class="btn-primary btn-sm" onclick="doInstall(\'' + it.slug + '\', \'' + t + '\')">安装</button>' + docBtn;
   } else if (hasUpdate) {
     actionBtns = '<button class="btn-success btn-sm" onclick="doUpdate(\'' + it.slug + '\', \'' + t + '\')">🔄 更新</button>'
-      + '<button class="btn-danger btn-sm" onclick="doUninstall(\'' + it.slug + '\', \'' + t + '\')">卸载</button>';
+      + '<button class="btn-danger btn-sm" onclick="doUninstall(\'' + it.slug + '\', \'' + t + '\')">卸载</button>' + docBtn;
   } else {
     actionBtns = '<span class="hg-badge installed">✅ 已安装' + (it.local_version ? ' v' + it.local_version : '') + '</span>'
-      + '<button class="btn-outline btn-sm" onclick="doUninstall(\'' + it.slug + '\', \'' + t + '\')">卸载</button>';
+      + '<button class="btn-outline btn-sm" onclick="doUninstall(\'' + it.slug + '\', \'' + t + '\')">卸载</button>' + docBtn;
   }
 
   const verTag = installed && hasUpdate
@@ -604,8 +609,8 @@ async function doInstall(slug, type) {
     }
     // 根据类型显示不同的提示
     else if (type === 'lovelace' || type === 'theme') {
-      if (confirm('✅ 安装成功！\n\n需要刷新页面才能生效。\n\n点击确定返回首页并刷新。')) {
-        window.location.href = '/';
+      if (confirm('\u2705 ' + (isSelf ? '更新' : '安装') + '成功！\n\n需要刷新页面才能生效。\n\n点击确定刷新整个 Home Assistant。')) {
+        top.location.reload();
       }
     } else if (type === 'integration') {
       if (confirm('✅ 安装成功！\n\n集成插件需要重启 Home Assistant 才能生效。\n\n是否立即重启 Home Assistant？')) {
@@ -644,8 +649,8 @@ async function doUpdate(slug, type) {
     
     // 根据类型显示不同的提示
     if (type === 'lovelace' || type === 'theme') {
-      if (confirm('✅ 更新成功！\n\n需要刷新页面才能生效。\n\n点击确定返回首页并刷新。')) {
-        window.location.href = '/';
+      if (confirm('\u2705 更新成功！\n\n需要刷新页面才能生效。\n\n点击确定刷新整个 Home Assistant。')) {
+        top.location.reload();
       }
     } else if (type === 'integration') {
       // 特殊处理：HAWGCS 自身
@@ -694,8 +699,8 @@ async function doUninstall(slug, type) {
         await restartHomeAssistant();
       }
     } else if (type === 'lovelace' || type === 'theme') {
-      if (confirm('✅ 卸载成功！\n\n点击确定返回首页并刷新。')) {
-        window.location.href = '/';
+      if (confirm('\u2705 卸载成功！\n\n需要刷新页面才能生效。\n\n点击确定刷新整个 Home Assistant。')) {
+        top.location.reload();
       }
     }
   } catch(err) {

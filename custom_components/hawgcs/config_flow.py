@@ -4,28 +4,28 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .const import (
-    CONF_BRANCH,
-    CONF_INDEX_PATH,
-    CONF_REPO,
     CONF_TOKEN,
-    DEFAULT_BRANCH,
-    DEFAULT_INDEX_PATH,
-    DEFAULT_REPO,
     DOMAIN,
 )
 
-USER_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_REPO, default=DEFAULT_REPO): str,
-        vol.Optional(CONF_BRANCH, default=DEFAULT_BRANCH): str,
-        vol.Optional(CONF_INDEX_PATH, default=DEFAULT_INDEX_PATH): str,
-        vol.Optional(CONF_TOKEN, default=""): str,
-    },
+# ── 步骤说明（传给前端直接显示，不依赖自动翻译查找）───────────────────────────
+_DESC = (
+    "Gitee 仓库地址已使用默认值，无需修改。\n\n"
+    "如遇 403 报错（请求频率超限），请填入 Gitee Personal Access Token 获取更高调用额度。"
+    "Token 为可选参数，留空也能用；也可后续在「设置」中补充添加。"
+)
+_DESC_TOKEN = (
+    "访问 Gitee 仓库时，如遇 403 报错（请求频率超限），请在此填入 Token 即可继续使用。"
+    "留空则使用匿名访问，频率受限。"
 )
 
 
@@ -33,13 +33,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     """配置 → 设备与服务 → HAWGCS → 配置"""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """初始化选项流。"""
         self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """管理选项。"""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
@@ -50,12 +48,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_TOKEN,
                         default=self.config_entry.data.get(CONF_TOKEN, ""),
-                    ): str,
+                        description={"suggested_value": self.config_entry.data.get(CONF_TOKEN, "")},
+                    ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
                 }
             ),
-            description_placeholders={
-                "token_hint": "修改 Gitee Personal Access Token（留空表示不使用）",
-            },
+            description_placeholders={"description": _DESC_TOKEN},
         )
 
 
@@ -69,7 +66,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> config_entries.OptionsFlow:
-        """返回选项流处理器。"""
         return OptionsFlowHandler(config_entry)
 
     async def async_step_user(
@@ -80,25 +76,25 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is None:
             return self.async_show_form(
-            step_id="user",
-            data_schema=USER_SCHEMA,
-            description_placeholders={
-                "token_hint": "Gitee Personal Access Token（可选，不填也能用，高频使用可能触发 403 限制）",
-            },
-        )
-
-        repo = user_input.get(CONF_REPO, DEFAULT_REPO)
-        branch = user_input.get(CONF_BRANCH, DEFAULT_BRANCH)
-
-        await self.async_set_unique_id(f"{repo}@{branch}")
-        self._abort_if_unique_id_configured()
+                step_id="user",
+                data_schema=vol.Schema(
+                    {
+                        vol.Optional(
+                            CONF_TOKEN,
+                            default="",
+                            description={"suggested_value": ""},
+                        ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
+                    }
+                ),
+                description_placeholders={"description": _DESC},
+            )
 
         return self.async_create_entry(
             title="HAWGCS 插件商店",
             data={
-                CONF_REPO: repo,
-                CONF_BRANCH: branch,
-                CONF_INDEX_PATH: user_input.get(CONF_INDEX_PATH, DEFAULT_INDEX_PATH),
+                "repo": "hawgcs/hawgcs",
+                "branch": "master",
+                "index_path": "plugins/repositories.json",
                 CONF_TOKEN: user_input.get(CONF_TOKEN, ""),
             },
         )

@@ -1,0 +1,33 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HAWGCS 插件商店",
+        "description": "Gitee 仓库地址已使用默认值，无需修改。\n\n如遇 403 报错（请求频率超限），请填入 Gitee Personal Access Token 获取更高调用额度。Token 为可选参数，留空也能用；也可后续在「设置」中补充添加。",
+        "data": {
+          "token": "Gitee Personal Access Token（可选）"
+        },
+        "data_description": {
+          "token": "访问 Gitee 仓库时，如遇 403 报错（请求频率超限），请在此填入 Token 即可继续使用。留空则使用匿名访问，频率受限。Token 也可后续在「设置 → 设备与服务 → HAWGCS → 配置」中补充添加。"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "只允许添加一个 HAWGCS 实例。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HAWGCS 设置",
+        "description": "Gitee Personal Access Token（可选）。\n\n当访问仓库时出现 403 报错（请求频率超限），填入 Token 即可继续使用。留空则使用匿名访问，频率受限。",
+        "data": {
+          "token": "Gitee Personal Access Token（可选）"
+        },
+        "data_description": {
+          "token": "访问 Gitee 仓库时，如遇 403 报错（请求频率超限），填入 Token 即可继续使用。留空则使用匿名访问，频率受限。"
+        }
+      }
+    }
+  }
+}

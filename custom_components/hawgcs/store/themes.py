@@ -20,17 +20,18 @@ class ThemeStore(StoreBase):
 
     async def install(self, item: dict[str, Any]) -> dict[str, Any]:
         slug = item["slug"]
-        path = item["path"]  # 如 "themes/dark-mode.yaml" 或 "themes/dark-mode/..."
+        path = item["path"]  # 如 "themes/meow-day.yaml"
+        version = item.get("version", "unknown")
 
-        _LOGGER.info("安装 theme [%s] from %s", slug, path)
-        downloaded = await self._install_theme(slug, path)
+        _LOGGER.info("安装 theme [%s] v%s from %s", slug, version, path)
+        downloaded = await self._install_theme(slug, path, version)
 
         # 通知 frontend 主题更新
         await self._notify_theme_change()
 
         return {
             "msg": f"✅ Theme [{slug}] 安装完成。"
-                    f"请前往「配置 → 主题」选择使用。如果主题未显示，请刷新浏览器页面。",
+                    f"请前往「设置 → 主题」选择使用。如果主题未显示，请刷新浏览器页面。",
             "files": downloaded,
             "slug": slug,
         }
@@ -48,10 +49,21 @@ class ThemeStore(StoreBase):
         return {"msg": f"✅ [{item['slug']}] 已刷新。"}
 
     def is_installed(self, slug: str) -> bool:
-        # 检查目录形式或单文件形式
-        return os.path.isdir(self.target_dir(slug)) or os.path.isfile(
-            os.path.join(self.target_root, f"{slug}.yaml")
-        ) or os.path.isfile(os.path.join(self.target_root, f"{slug}.yml"))
+        # 只认目录形式（含 .hacs.json）
+        return os.path.isdir(self.target_dir(slug))
+
+    def _read_meta(self, slug: str) -> dict[str, Any] | None:
+        """读取主题的 .hacs.json 元数据，兼容旧单文件形式。"""
+        # 新目录形式
+        meta_file = os.path.join(self.target_dir(slug), ".hacs.json")
+        if os.path.isfile(meta_file):
+            try:
+                with open(meta_file, encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:  # noqa: BLE001
+                pass
+        # 旧单文件形式（version 字段写死在 yaml 里不现实，直接返回 None 驱动迁移）
+        return None
 
     def get_installed(self) -> list[dict[str, Any]]:
         root = self.target_root
@@ -60,43 +72,42 @@ class ThemeStore(StoreBase):
         result = []
         for name in os.listdir(root):
             sub = os.path.join(root, name)
-            if os.path.isdir(sub):
-                # 目录形式的主题
-                yaml_files = [f for f in os.listdir(sub) if f.endswith((".yaml", ".yml"))]
-                result.append({
-                    "slug": name,
-                    "version": None,
-                    "main_file": yaml_files[0] if yaml_files else None,
-                })
-            elif name.endswith((".yaml", ".yml")):
-                # 单文件主题（如 dark-mode.yaml）
-                slug = name.replace(".yaml", "").replace(".yml", "")
-                result.append({
-                    "slug": slug,
-                    "version": None,
-                    "main_file": name,
-                })
+            if not os.path.isdir(sub):
+                continue
+            meta = self._read_meta(name)
+            yaml_files = [
+                f for f in os.listdir(sub)
+                if f.endswith((".yaml", ".yml")) and not f.startswith(".")
+            ]
+            result.append({
+                "slug": name,
+                "version": meta.get("version") if meta else None,
+                "main_file": yaml_files[0] if yaml_files else None,
+            })
         return result
 
     async def async_get_installed(self) -> list[dict[str, Any]]:
         """async 包装，供 HA 事件循环调用。"""
         return await self.hass.async_add_executor_job(self.get_installed)
 
-    # ---- 安装主题：可能是单文件也可能是目录 ----
+    # ---- 安装主题：统一写入 themes/{slug}/ 目录 + .hacs.json ----
 
-    async def _install_theme(self, slug: str, remote_path: str) -> list[str]:
-        # 先试试是不是单文件
-        try:
-            content = await self._download_bytes(self.raw_url(remote_path))
-            # 是文件，直接写
-            target = os.path.join(self.target_root, f"{slug}.yaml")
-            await self._write_atomic(target, content)
-            return [f"{slug}.yaml"]
-        except HomeAssistantError:
-            pass
+    async def _install_theme(self, slug: str, remote_path: str, version: str) -> list[str]:
+        # 统一写到目录里（哪怕是单文件主题）
+        target_dir = os.path.join(self.target_root, slug)
+        yaml_name = f"{slug}.yaml"
+        target_file = os.path.join(target_dir, yaml_name)
+        meta_file = os.path.join(target_dir, ".hacs.json")
 
-        # 是目录，拉整个目录
-        return await self.download_tree(remote_path, slug)
+        # 下载主题文件内容
+        content = await self._download_bytes(self.raw_url(remote_path))
+        await self._write_atomic(target_file, content)
+
+        # 写元数据文件（version 来源：repositories.json）
+        meta = {"version": version, "slug": slug}
+        await self._write_atomic(meta_file, json.dumps(meta, ensure_ascii=False).encode())
+
+        return [f"{slug}/{yaml_name}", f"{slug}/.hacs.json"]
 
     # ---- 通知 frontend ----
 
