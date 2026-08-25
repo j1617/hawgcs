@@ -317,6 +317,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
     <div class="hg-header-info">
       <h1>📦 HAWGCS Git 插件商店 <span id="header-version" style="font-size:18px;font-weight:normal;opacity:0.7"></span></h1>
       <p>HomeAssistant Git 插件商店 · 基于 Gitee · 支持 Integration / Lovelace / Theme</p>
+      <p id="tips-container">加载中...</p>
     </div>
   </div>
   <div class="hg-toolbar">
@@ -397,6 +398,12 @@ async function load() {
     if (!resp.ok) throw new Error("HTTP " + resp.status);
     const data = await resp.json();
     cache = data.repositories || [];
+    
+    // 渲染 tips
+    if (data.tips) {
+      renderTips(data.tips);
+    }
+    
     refreshUI();
   } catch(err) {
     toast('加载索引失败: ' + err, 'error');
@@ -406,6 +413,38 @@ async function load() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'block';
   }
+}
+
+// ─── Tips 渲染 ────────────────────────────────────────────────────────────────
+function renderTips(tips) {
+  const container = document.getElementById('tips-container');
+  if (!tips || !tips.context) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  const text = tips.context;
+  const type = parseInt(tips.type || '0', 10);
+  const color = tips.color || '#FF0000';
+  
+  container.style.display = 'block';
+  container.style.color = color;
+  
+  if (type === 1) {
+    // 跑马灯效果
+    container.innerHTML = `
+      <marquee behavior="scroll" direction="left" scrollamount="3" style="padding: 0; margin: 0;">${escapeHtml(text)}</marquee>
+    `;
+  } else {
+    // 静态展示（默认）
+    container.textContent = text;
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // ─── Render ────────────────────────────────────────────────────────────────────

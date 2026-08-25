@@ -233,10 +233,45 @@ class HawgcsManager:
         self.plugin_list = data
         self._index_loaded = True
         _LOGGER.debug("索引加载完成: %s 条", len(data))
+
+        # 加载 tips.json
+        tips = await self._load_tips()
         
         return {
             "repositories": data,
+            "tips": tips,
         }
+
+    async def _load_tips(self) -> dict | None:
+        """加载 tips.json（与 repositories.json 同级目录）。"""
+        # tips.json 路径：索引同级目录
+        tips_path_raw = self.index_path.rsplit("/", 1)[0] + "/tips.json"
+        tips_url = (
+            f"https://gitee.com/{self.repo}/raw/{self.branch}/{tips_path_raw}"
+        )
+        
+        try:
+            session = aiohttp_client.async_get_clientsession(self.hass)
+            headers = {"Accept": "application/json"}
+            if self.token:
+                headers["Authorization"] = f"token {self.token}"
+            
+            async with session.get(
+                tips_url,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                if resp.status != 200:
+                    _LOGGER.debug("tips.json 加载失败: status=%s", resp.status)
+                    return None
+                text = await resp.text()
+                import json
+                tips = json.loads(text)
+                _LOGGER.info("tips.json 加载成功: %s", tips)
+                return tips
+        except Exception as err:
+            _LOGGER.debug("tips.json 加载异常（不影响运行）: %s", err)
+            return None
 
     async def _enrich_item(self, item: dict) -> None:
         """给单条 item 追加 installed / local_version / has_update 字段。"""
