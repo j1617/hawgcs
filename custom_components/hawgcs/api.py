@@ -114,11 +114,13 @@ async def api_status(request: web.Request) -> web.Response:
 async def api_version(request: web.Request) -> web.Response:
     """GET /api/hawgcs/version - 返回 HAWGCS 版本号（从 manifest.json 读取）"""
     import os, json
+    from homeassistant.util import executor
     base_dir = os.path.dirname(__file__)
     manifest_path = os.path.join(base_dir, "manifest.json")
     try:
-        with open(manifest_path, encoding="utf-8") as f:
-            data = json.load(f)
+        data = await request.app["hass"].async_add_executor_job(
+            lambda: json.load(open(manifest_path, encoding="utf-8"))
+        )
         version = data.get("version", VERSION)
     except Exception:
         version = VERSION

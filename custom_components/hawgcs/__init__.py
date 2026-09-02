@@ -109,11 +109,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # 使用 iframe 类型注册面板，指向自定义视图
     async_register_built_in_panel(
         hass,
-        "iframe",
-        "HAWGCS 插件商店",
-        "mdi:storefront-outline",
-        DOMAIN,
-        {"url": "/api/hawgcs/panel"},
+        component_name="iframe",
+        sidebar_title="HAWGCS 插件商店",
+        sidebar_icon="mdi:storefront-outline",
+        frontend_url_path=DOMAIN,
+        require_admin=False,
+        config={"url": "/api/hawgcs/panel"},
     )
 
     register_api(hass)

@@ -33,7 +33,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     """配置 → 设备与服务 → HAWGCS → 配置"""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
+        self._data = config_entry.data
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -47,8 +47,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     vol.Optional(
                         CONF_TOKEN,
-                        default=self.config_entry.data.get(CONF_TOKEN, ""),
-                        description={"suggested_value": self.config_entry.data.get(CONF_TOKEN, "")},
+                        default=self._data.get(CONF_TOKEN, ""),
+                        description={"suggested_value": self._data.get(CONF_TOKEN, "")},
                     ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
                 }
             ),

@@ -23,7 +23,7 @@ class IntegrationStore(StoreBase):
         path = item["path"]  # 远程仓库下的相对路径，如 "integrations/helloworld"
 
         _LOGGER.info("安装 integration [%s] from %s", slug, path)
-        downloaded = await self.download_tree(path, slug)
+        downloaded = await self.download_tree_recursive(path, slug)
 
         # 装完触发 HA 重新加载该集成
         await self._reload_integration(slug)

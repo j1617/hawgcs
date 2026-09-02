@@ -230,7 +230,13 @@ class StoreBase(ABC):
 
         for entry in entries:
             name = entry["name"]
-            rel = os.path.join(_rel, name) if _rel else name
+            # 第一次调用：剥离 remote_path 前缀（"integrations/hawgcs/manifest.json" → "manifest.json"）
+            # 递归进子目录后：_rel 已是纯相对路径，直接拼，不需要再剥
+            if _rel:
+                rel = os.path.join(_rel, name)
+            else:
+                strip = remote_path.rstrip("/") + "/"
+                rel = entry["name"][len(strip):] if entry["name"].startswith(strip) else entry["name"]
             etype = entry.get("type")
             if etype == "dir":
                 sub = await self.download_tree_recursive(
